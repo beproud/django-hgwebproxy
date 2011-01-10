@@ -156,8 +156,8 @@ class RepositoryAdmin(admin.ModelAdmin):
         # Redirect the user to the public repository view if
         # The user does not have permission to change the repository.
         obj = self.get_object(request, unquote(object_id))
-        if (self.has_view_permission(request.user, obj) and not
-                self.has_change_permission(request.user, obj)):
+        if (self.has_view_permission(request, obj) and not
+                self.has_change_permission(request, obj)):
             return redirect(obj)
         else:
             return super(RepositoryAdmin, self).change_view(request, object_id, extra_context)
