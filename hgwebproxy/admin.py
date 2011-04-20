@@ -170,7 +170,7 @@ class RepositoryAdmin(admin.ModelAdmin):
         # In the case where the owner was not set 
         # set it to the current user. Owner is not present in the form
         # for non-superusers.
-        if not obj.owner:
+        if not obj.owner_id:
             obj.owner = request.user
         obj.save()
 
