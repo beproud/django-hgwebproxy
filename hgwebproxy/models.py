@@ -50,7 +50,7 @@ class RepositoryManager(models.Manager):
     def _readable(self, user):
         if user.is_superuser:
             return self.all()
-        return self.filter(
+        return self.distinct().filter(
             Q(owner = user) | 
             Q(readers = user) |
             Q(writers = user) |
@@ -63,7 +63,7 @@ class RepositoryManager(models.Manager):
     def _writable(self, user): 
         if user.is_superuser:
             return self.all()
-        return self.filter(
+        return self.distinct().filter(
             Q(owner = user) | 
             Q(writers = user) |
             Q(admins = user) |
@@ -74,7 +74,7 @@ class RepositoryManager(models.Manager):
     def _admin(self, user):
         if user.is_superuser:
             return self.all()
-        return self.filter(
+        return self.distinct().filter(
             Q(owner = user) | 
             Q(admins = user) |
             Q(admin_groups__in=user.groups.all())
