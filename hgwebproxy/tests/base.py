@@ -3,7 +3,7 @@
 import os
 import shutil
 
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import User, Group, Permission
 from django.test import TestCase as DjangoTestCase
 from django.utils.encoding import smart_str
 from django.conf import settings
@@ -21,6 +21,19 @@ class RepoTestCase(DjangoTestCase):
         # Delete all repositories in the base directory
         for path in os.listdir(hgwebproxy_settings.TEST_REPO_ROOT):
             shutil.rmtree(os.path.join(hgwebproxy_settings.TEST_REPO_ROOT, path))
+
+        view_perm = Permission.objects.get_by_natural_key('view_repository', 'hgwebproxy', 'repository')
+        change_perm = Permission.objects.get_by_natural_key('change_repository', 'hgwebproxy', 'repository')
+        delete_perm = Permission.objects.get_by_natural_key('delete_repository', 'hgwebproxy', 'repository')
+        pull_perm = Permission.objects.get_by_natural_key('pull_repository', 'hgwebproxy', 'repository')
+        push_perm = Permission.objects.get_by_natural_key('push_repository', 'hgwebproxy', 'repository')
+        for username in ['owner', 'reader', 'writer', 'group_reader', 'group_writer', 'model_perms']:
+            user = User.objects.get(username=username)
+            user.user_permissions.add(view_perm)
+            user.user_permissions.add(change_perm)
+            user.user_permissions.add(delete_perm)
+            user.user_permissions.add(pull_perm)
+            user.user_permissions.add(push_perm)
 
         # Create test repository
         repo = Repository(
