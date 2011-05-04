@@ -38,17 +38,6 @@ class RepositoryAdminForm(forms.ModelForm):
 
         return self.cleaned_data["location"]
 
-    def clean_style(self):
-        """
-        Checks the style to see if a path is returned by
-        mercurial's templater. If no path is returned
-        then the style is assumed to be invalid or not installed.
-        """
-        from mercurial.templater import templatepath
-        if not templatepath(self.cleaned_data["style"]):
-            raise forms.ValidationError(_("'%s' is not an available style." % self.cleaned_data["style"]))
-        return self.cleaned_data["style"]
-
 class RepositoryAdmin(admin.ModelAdmin):
     actions = None
     list_display = ['name', 'owner', 'description']
