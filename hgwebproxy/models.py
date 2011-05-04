@@ -219,6 +219,11 @@ class Repository(models.Model):
         verbose_name = _('repository')
         verbose_name_plural = _('repositories')
         ordering = ['name']
+        permissions = (
+            ("view_repository", "Can view repository"),
+            ("push_repository", "Can push to repository"),
+            ("pull_repository", "Can pull from repository"),
+        )
 
 def _repo_pre_save(sender, instance, **kwargs):
     # Set the location of the repository if REPO_ROOT is set.
