@@ -75,13 +75,18 @@ class RepositoryAdmin(admin.ModelAdmin):
             }),
             ('Permissions', {
                 'fields': (
+                    'is_private',
                     'readers', 'writers', 'admins',
                     'reader_groups', 'writer_groups', 'admin_groups',
                 ),
                 'classes': ('collapse',)
             }),
             ('Options', {
-                'fields': ('style', 'allow_archive',),
+                'fields': (
+                    'style', 
+                    'allow_archive',
+                    'allow_push_ssl',
+                ),
                 'classes': ('collapse',)
             }),
         )

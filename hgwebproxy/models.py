@@ -142,8 +142,8 @@ class Repository(models.Model):
 
     allow_archive = models.CharField(max_length=100, blank=True, null=True,
         help_text=_("Same as in hgrc config, as: zip, bz2, gz"))
-    allow_push_ssl = models.BooleanField(default=False, help_text=_("You must set your webserver to handle secure http connection"))
-    is_private = models.BooleanField(default=False,
+    allow_push_ssl = models.BooleanField(_('Require SSL for push?'), default=False, help_text=_("You must set your webserver to handle secure http connection"))
+    is_private = models.BooleanField(_('Private?'), default=False,
         help_text=_('Private repositories It can only be seen by the owner and allowed users'))
     style = models.CharField(max_length=256, blank=True, null=True, default=hgwebproxy_settings.DEFAULT_STYLE,
         help_text=_('The hgweb style'), )
