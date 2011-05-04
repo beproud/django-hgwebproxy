@@ -203,12 +203,6 @@ class Repository(models.Model):
     can_push = has_push_permission
 
     @permalink
-    def get_admin_explore_url(self):
-        return ('admin:hgwebproxy_repository_explore', (), {
-            'id': self.id,
-        })
-
-    @permalink
     def get_absolute_url(self):
         return ('repo_detail', (), {
             'username': self.owner.username,
