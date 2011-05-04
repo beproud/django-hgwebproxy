@@ -3,7 +3,7 @@ import os
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
-BASE_DIR = os.path.dirname(__file__)
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 BASE_DIR = os.path.abspath(BASE_DIR)
 
 ADMINS = (
@@ -13,7 +13,7 @@ ADMINS = (
 MANAGERS = ADMINS
 
 DATABASE_ENGINE = 'sqlite3'
-DATABASE_NAME = os.path.join(BASE_DIR, 'database.sqlite')
+DATABASE_NAME = os.path.join(BASE_DIR, 'example', 'database.sqlite')
 DATABASE_USER = ''             # Not used with sqlite3.
 DATABASE_PASSWORD = ''         # Not used with sqlite3.
 DATABASE_HOST = ''             # Set to empty string for localhost. Not used with sqlite3.
@@ -66,6 +66,10 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
 )
 
+IGNORABLE_404_STARTS = ('/cgi-bin/', '/_vti_bin', '/_vti_inf')
+
+IGNORABLE_404_ENDS = ('mail.pl', 'mailform.pl', 'mail.cgi', 'mailform.cgi', 'favicon.ico', '.php')
+
 ROOT_URLCONF = 'example.urls'
 
 TEMPLATE_CONTEXT_PROCESSORS = (
@@ -80,7 +84,7 @@ TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
-    [os.path.join(BASE_DIR, "templates")]
+    [os.path.join(BASE_DIR, "example/templates")]
 )
 
 INSTALLED_APPS = (
@@ -90,51 +94,12 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.admin',
     'django.contrib.humanize',
+    'django.contrib.admindocs',
     'hgwebproxy',
 )
 
 LOGIN_URL = '/login/'
 
 HGPROXY_REPO_PERMANENT_DELETE=True
-HGPROXY_REPO_ROOT=os.path.join(BASE_DIR, 'repos')
 APPEND_SLASH=False
 HGPROXY_STATIC_URL='foo/'
-
-DEBUG_TOOLBAR = True
-DEVSERVER = False
-
-if DEBUG_TOOLBAR:
-    INSTALLED_APPS += ('debug_toolbar',)
-    INTERNAL_IPS = ('127.0.0.1',)
-    TEMPLATE_CONTEXT_PROCESSORS += ('django.core.context_processors.debug',)
-    MIDDLEWARE_CLASSES += ('debug_toolbar.middleware.DebugToolbarMiddleware',)
-    DEBUG_TOOLBAR_PANELS = (
-        'debug_toolbar.panels.version.VersionDebugPanel',
-        'debug_toolbar.panels.timer.TimerDebugPanel',
-        'debug_toolbar.panels.settings_vars.SettingsVarsDebugPanel',
-        'debug_toolbar.panels.headers.HeaderDebugPanel',
-        'debug_toolbar.panels.request_vars.RequestVarsDebugPanel',
-        'debug_toolbar.panels.template.TemplateDebugPanel',
-        'debug_toolbar.panels.sql.SQLDebugPanel',
-        #'debug_toolbar.panels.signals.SignalDebugPanel',
-        'debug_toolbar.panels.logger.LoggingPanel',)
-    DEBUG_TOOLBAR_CONFIG = {
-        'INTERCEPT_REDIRECTS': False,
-    }
-
-if DEVSERVER:
-    INSTALLED_APPS += ('devserver',)
-
-    DEVSERVER_MODULES = (
-        'devserver.modules.sql.SQLRealTimeModule',
-        'devserver.modules.sql.SQLSummaryModule',
-        'devserver.modules.profile.ProfileSummaryModule',
-
-        # Modules not enabled by default
-        'devserver.modules.profile.MemoryUseModule',
-        'devserver.modules.cache.CacheSummaryModule',
-    )
-    DEVSERVER_IGNORED_PREFIXES = [
-        MEDIA_URL,
-    ]
-

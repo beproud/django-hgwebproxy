@@ -7,8 +7,22 @@ syntax: glob
 *.o
 *.pyc
 *.swp
+build
+dist
+site_media
+*-log.txt
+*.egg-info
+download*
+tests/.installed.cfg
+tests/bin
+tests/develop-eggs
+tests/eggs
+tests/parts
+django_hgwebproxy.egg-info
+example/database.sqlite
 
 syntax: regexp
+.*\#.*\#$ 
 ^\.pydevproject$
 ^\.project$
 ^\.settings

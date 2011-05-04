@@ -42,7 +42,7 @@
             "last_name": "user", 
             "is_active": true, 
             "is_superuser": false, 
-            "is_staff": false, 
+            "is_staff": true, 
             "last_login": "2009-12-21 05:36:38", 
             "groups": [], 
             "user_permissions": [], 
@@ -60,7 +60,7 @@
             "last_name": "user", 
             "is_active": true, 
             "is_superuser": false, 
-            "is_staff": false, 
+            "is_staff": true, 
             "last_login": "2009-12-21 05:37:07", 
             "groups": [], 
             "user_permissions": [], 
@@ -78,7 +78,7 @@
             "last_name": "user", 
             "is_active": true, 
             "is_superuser": false, 
-            "is_staff": false, 
+            "is_staff": true, 
             "last_login": "2009-12-21 05:37:33", 
             "groups": [], 
             "user_permissions": [], 
@@ -96,7 +96,7 @@
             "last_name": "user", 
             "is_active": true, 
             "is_superuser": false, 
-            "is_staff": false, 
+            "is_staff": true, 
             "last_login": "2009-12-21 05:38:22", 
             "groups": [
                 1
@@ -116,7 +116,7 @@
             "last_name": "user", 
             "is_active": true, 
             "is_superuser": false, 
-            "is_staff": false, 
+            "is_staff": true, 
             "last_login": "2009-12-21 05:38:53", 
             "groups": [
                 2
@@ -131,42 +131,36 @@
         "pk": 7, 
         "model": "auth.user", 
         "fields": {
+            "username": "model_perms", 
+            "first_name": "model_perms", 
+            "last_name": "user", 
+            "is_active": true, 
+            "is_superuser": false, 
+            "is_staff": true, 
+            "last_login": "2009-12-21 05:38:53", 
+            "groups": [], 
+            "user_permissions": [], 
+            "password": "sha1$f2999$df2bfedd2fb850292335aa299407b2472eac6071", 
+            "email": "model_perms@example.com", 
+            "date_joined": "2009-12-21 05:38:53"
+        }
+    },
+    {
+        "pk": 8, 
+        "model": "auth.user", 
+        "fields": {
             "username": "no_perms", 
             "first_name": "no_perms", 
             "last_name": "user", 
             "is_active": true, 
             "is_superuser": false, 
-            "is_staff": false, 
+            "is_staff": true, 
             "last_login": "2009-12-21 05:38:53", 
             "groups": [], 
             "user_permissions": [], 
             "password": "sha1$f2999$df2bfedd2fb850292335aa299407b2472eac6071", 
             "email": "no_perms@example.com", 
             "date_joined": "2009-12-21 05:38:53"
-        }
-    },
-    {
-        "pk": 1, 
-        "model": "hgwebproxy.repository", 
-        "fields": {
-            "description": "Test Repository", 
-            "readers": [
-                2
-            ], 
-            "reader_groups": [
-                1
-            ], 
-            "writers": [
-                4
-            ], 
-            "location": "/path/to/repository", 
-            "owner": 3, 
-            "writer_groups": [
-                2
-            ], 
-            "slug": "test-repo", 
-            "allow_archive": "zip, bz2, gz", 
-            "name": "test-repo"
         }
     }
 ]

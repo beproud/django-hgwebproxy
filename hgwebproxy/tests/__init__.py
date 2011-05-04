@@ -1,4 +1,6 @@
 #:coding=utf-8:
 
-from permission_tests import *
-from web_tests import *
+from api_tests import * 
+from admin_tests import *
+from permission_tests import * 
+from web_tests import * 

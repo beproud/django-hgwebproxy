@@ -1,66 +1,89 @@
 #:coding=utf-8:
 
+import os
+
 from django.contrib.auth.models import User
 from django.test import TestCase as DjangoTestCase
 from django.core.urlresolvers import reverse
+from django.utils.http import urlencode
 from django.conf import settings
 
+from hgwebproxy.tests.base import RepoTestCase, RequestTestCaseMixin
 from hgwebproxy import settings as hgwebproxy_settings
 
-class RequestTestCase(DjangoTestCase):
-
-    def assertStatus(self, response, status=200):
-        self.assertEquals(response.status_code, status)
-
-    def assertOk(self, response):
-        self.assertStatus(response)
-
-    def assertBadRequest(self, response):
-        self.assertStatus(response, 400)
-
-    def assertForbidden(self, response):
-        self.assertStatus(response, 403)
-
-    def assertNotFound(self, response):
-        self.assertStatus(response, 404)
-
-    def assertRedirect(self, response, redirect_url=None):
-        self.assertStatus(response, 302)
-        self._assertLocationHeader(response, redirect_url)
-
-    def assertPermanentRedirect(self, response, request_url=None):
-        self.assertStatus(response, 301)
-        self._assertLocationHeader(response, redirect_url)
-
-    def _assertLocationHeader(self, response, request_url=None):
-        if request_url is None:
-            self.assertTrue(response.get("Location", None) is not None)
-        else:
-            self.assertEquals(response.get("Location", None), request_url)
-
-    def assertNotAllowed(self, response, allow=None):
-        self.assertEquals(response.status_code, 405)
-        if allow is not None:
-            self.assertEquals(response["Allow"], allow)
-
-    def assertGone(self, response):
-        self.assertEquals(response.status_code, 410)
-
-    def assertHtml(self, response):
-        self.assertContains(response, "<html") # open tag
-        self.assertContains(response, "</html>") # close tag
-        self.assertContains(response, "<head")
-        self.assertContains(response, "</head>")
-        self.assertContains(response, "<body")
-        self.assertContains(response, "</body>")
-
-class HgWebTest(RequestTestCase):
+class HgWebTest(RequestTestCaseMixin, RepoTestCase):
     fixtures = ['basic.json']
 
     def test_hgwebdir_top(self):
-        response = self.client.get(reverse("repo_list", kwargs={"pattern":""}))
+        response = self.client.get(reverse("repo_list"))
         self.assertOk(response)
         self.assertHtml(response)
+
+    def test_repo_detail(self):
+        self.client.login(username="owner", password="owner")
+
+        response = self.client.get(reverse('repo_detail',  kwargs={'pattern':'test-repo/'}))
+        self.assertOk(response)
+        self.assertHtml(response)
+
+    def test_repo_detail_forbidden(self):
+        self.client.login(username="no_perms", password="no_perms")
+        response = self.client.get(reverse('repo_detail',  kwargs={'pattern':'test-repo/'}))
+        self.assertForbidden(response)
+
+class DebugStaticFilesTest(RequestTestCaseMixin, RepoTestCase):
+
+    def setUp(self):
+        super(DebugStaticFilesTest, self).setUp()
+        self.old_debug = settings.DEBUG
+        settings.DEBUG = True
+
+    def tearDown(self):
+        super(DebugStaticFilesTest, self).tearDown()
+        settings.DEBUG = self.old_debug
+
+    def _get_environ(self, path, data={}):
+        import urllib
+        from urlparse import urlparse, urlunparse, urlsplit
+        from django.test.client import FakePayload
+
+        parsed = urlparse(path)
+        r = {
+            'CONTENT_TYPE':    'text/html; charset=utf-8',
+            'PATH_INFO':       urllib.unquote(parsed[2]),
+            'QUERY_STRING':    urlencode(data, doseq=True) or parsed[4],
+            'REQUEST_METHOD': 'GET',
+            'wsgi.input':      FakePayload('')
+        }
+        environ = {
+            'HTTP_COOKIE':       self.client.cookies.output(header='', sep='; '),
+            'PATH_INFO':         '/',
+            'QUERY_STRING':      '',
+            'REMOTE_ADDR':       '127.0.0.1',
+            'REQUEST_METHOD':    'GET',
+            'SCRIPT_NAME':       '',
+            'SERVER_NAME':       'testserver',
+            'SERVER_PORT':       '80',
+            'SERVER_PROTOCOL':   'HTTP/1.1',
+            'wsgi.version':      (1,0),
+            'wsgi.url_scheme':   'http',
+            'wsgi.errors':       self.client.errors,
+            'wsgi.multiprocess': True,
+            'wsgi.multithread':  False,
+            'wsgi.run_once':     False,
+        }
+        environ.update(r)
+        return environ
+
+    def test_static_file(self):
+        from django.core.handlers.wsgi import WSGIRequest
+        from hgwebproxy.views import static_file
+
+        request = WSGIRequest(self._get_environ('/hg/static/hglogo.png'))
+        response = static_file(request, 'hglogo.png')
+        self.assertOk(response)
+        self.assertHeader(response, "Content-Type", "image/png")
+
 
 class HGWebDirPublicTest(RequestTestCase):
     fixtures = ['basic.json']

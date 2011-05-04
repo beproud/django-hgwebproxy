@@ -58,7 +58,7 @@ class HgRequestWrapper(object):
         """
         self.env['REMOTE_USER'] = username
 
-    def read(self, count= -1):
+    def read(self, count=-1):
         return self.inp.read(count)
 
     def flush(self):
@@ -120,4 +120,3 @@ class HgRequestWrapper(object):
         length = int(self.env.get('CONTENT_LENGTH', 0))
         for s in util.filechunkiter(self.inp, limit=length):
             pass
-

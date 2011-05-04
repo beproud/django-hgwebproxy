@@ -45,7 +45,7 @@ def create_repository(location):
 
     if not os.path.isdir(os.path.join(location, ".hg")):
         if not os.path.exists(location):
-            os.mkdir(location)
+            os.makedirs(location)
 
         u = setup_ui()
         commands.init(u, location)
@@ -59,7 +59,7 @@ def delete_repository(location):
     Deletes the repository at the specified location if
     the REPO_PERMANENT_DELETE setting is True
     """
-    if hgproxy_settings.REPO_PERMANENT_DELETE:
+    if os.path.exists(location) and hgproxy_settings.REPO_PERMANENT_DELETE:
         import shutil
         shutil.rmtree(location)
 

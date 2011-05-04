@@ -2,15 +2,91 @@ import re
 import os
 
 from django.db import models
-from django.db.models import permalink
+from django.db.models.signals import pre_save, post_save, post_delete
+from django.db.models import permalink, Q
 from django.contrib.auth.models import User, Group
 from django.utils.translation import ugettext_lazy as _
 from django.core.exceptions import ValidationError
 from django.contrib.sites.models import Site
 
-from hgwebproxy.api import create_repository, delete_repository, is_template, \
-                            get_last_changeset
+from hgwebproxy.api import *
 from hgwebproxy import settings as hgwebproxy_settings
+
+class RepositoryManager(models.Manager):
+    def has_view_permission(self, user):
+        if not self._has_model_perm(user, 'view'):
+            return self.none()
+        else:
+            return self._readable(user)
+
+    def has_pull_permission(self, user):
+        if not self._has_model_perm(user, 'pull'):
+            return self.none()
+        else:
+            return self._readable(user)
+
+    def has_push_permission(self, user):
+        if not self._has_model_perm(user, 'push'):
+            return self.none()
+        else:
+            return self._writable(user)
+
+    def has_change_permission(self, user):
+        if not self._has_model_perm(user, 'change'):
+            return self.none()
+        else:
+            return self._admin(user)
+
+    def has_delete_permission(self, user):
+        if not self._has_model_perm(user, 'delete'):
+            return self.none()
+        else:
+            return self._admin(user)
+
+    def _has_model_perm(self, user, perm):
+        opts = Repository._meta
+        # Special case for custom permissions.
+        if perm in ('view', 'push', 'pull'):
+            perm_name = '%s_repository' % perm
+        else:
+            perm_name = getattr(opts, 'get_%s_permission' % perm, lambda: False)()
+        return user.has_perm(opts.app_label + '.' + perm_name)
+
+    def _readable(self, user):
+        if user.is_superuser:
+            return self.all()
+        return self.distinct().filter(
+            Q(owner = user) | 
+            Q(readers = user) |
+            Q(writers = user) |
+            Q(admins = user) |
+            Q(reader_groups__in=user.groups.all()) |
+            Q(writer_groups__in=user.groups.all()) |
+            Q(admin_groups__in=user.groups.all())
+        )
+
+    def _writable(self, user): 
+        if user.is_superuser:
+            return self.all()
+        return self.distinct().filter(
+            Q(owner = user) | 
+            Q(writers = user) |
+            Q(admins = user) |
+            Q(writer_groups__in=user.groups.all()) |
+            Q(admin_groups__in=user.groups.all())
+        )
+
+    def _admin(self, user):
+        if user.is_superuser:
+            return self.all()
+        return self.distinct().filter(
+            Q(owner = user) | 
+            Q(admins = user) |
+            Q(admin_groups__in=user.groups.all())
+        )
+
+def _qs_exists(qs):
+    return not not qs.values("pk")[:1]
 
 def validate_slug(value):
     """
@@ -56,61 +132,81 @@ def validate_style(value):
 class Repository(models.Model):
     name = models.CharField(max_length=140)
     slug = models.SlugField(unique=True,
-        help_text=_('Would be the unique url of the repo. Characters in slug must be alphanumeric with no special symbols or hyphens'))
+        help_text='Would be the name of the repo. Do not use "-" inside the name')
     owner = models.ForeignKey(User)
     ascendent = models.ForeignKey('self', null=True, related_name='descendents',
         editable=False)
     location = models.CharField(max_length=200,
-        help_text=_('The absolute path to the repository. If the repository does not exist it will be created.'))
-    description = models.TextField(blank=True)
+            help_text=_('The absolute path to the repository. If the repository does not exist it will be created.'))
+    description = models.TextField(blank=True, null=True)
 
-    allow_archive = models.CharField(max_length=100, blank=True,
+    allow_archive = models.CharField(max_length=100, blank=True, null=True,
         help_text=_("Same as in hgrc config, as: zip, bz2, gz"))
     allow_push_ssl = models.BooleanField(default=False, help_text=_("You must set your webserver to handle secure http connection"))
     is_private = models.BooleanField(default=False,
         help_text=_('Private repositories It can only be seen by the owner and allowed users'))
-    style = models.CharField(max_length=256, blank=True, default=hgwebproxy_settings.DEFAULT_STYLE,
+    style = models.CharField(max_length=256, blank=True, null=True, default=hgwebproxy_settings.DEFAULT_STYLE,
         help_text=_('The hgweb style'), )
 
-    readers = models.ManyToManyField(User,
-        related_name="repository_readable_set", blank=True, null=True)
-    writers = models.ManyToManyField(User,
-        related_name="repository_writeable_set", blank=True, null=True)
-    reader_groups = models.ManyToManyField(Group,
-        related_name="repository_readable_set", blank=True, null=True)
-    writer_groups = models.ManyToManyField(Group,
-        related_name="repository_writeable_set", blank=True, null=True)
+    readers = models.ManyToManyField(User, related_name="repository_readable_set", blank=True, null=True)
+    writers = models.ManyToManyField(User, related_name="repository_writeable_set", blank=True, null=True)
+    admins = models.ManyToManyField(User, related_name="repository_admin_set", blank=True, null=True)
+    reader_groups = models.ManyToManyField(Group, related_name="repository_readable_set", blank=True, null=True)
+    writer_groups = models.ManyToManyField(Group, related_name="repository_writeable_set", blank=True, null=True)
+    admin_groups = models.ManyToManyField(Group, related_name="repository_admin_set", blank=True, null=True)
+
+    objects = RepositoryManager()
 
     def __unicode__(self):
         return u"%s's %s" % (self.owner.username, self.name)
 
-    class Meta:
-        verbose_name = _('repository')
-        verbose_name_plural = _('repositories')
-        ordering = ['name', ]
+    def _is_reader(self, user):
+        return not user.is_anonymous() and (
+            _qs_exists(self.readers.filter(pk=user.pk)) or
+            _qs_exists(self.reader_groups.filter(
+                pk__in=map(lambda g: g.pk, user.groups.all())))
+        )
 
-    #TODO: This could be a little bit more ... nicer?
-    def can_browse(self, user):
-        return user.is_superuser or \
-            user == self.owner or \
-            not not self.readers.filter(pk=user.id) or \
-            not not self.writers.filter(pk=user.id) or \
-            not not self.reader_groups.filter(pk__in=[group.id for group in user.groups.all()]) or \
-            not not self.writer_groups.filter(pk__in=[group.id for group in user.groups.all()])
+    def _is_writer(self, user):
+        return not user.is_anonymous() and (
+            _qs_exists(self.writers.filter(pk=user.pk)) or
+            _qs_exists(self.writer_groups.filter(
+                pk__in=map(lambda g: g.pk, user.groups.all())))
+        )
 
-    def can_pull(self, user):
-        return user.is_superuser or \
-            user == self.owner or \
-            not not self.readers.filter(pk=user.id) or \
-            not not self.writers.filter(pk=user.id) or \
-            not not self.reader_groups.filter(pk__in=[group.id for group in user.groups.all()]) or \
-            not not self.writer_groups.filter(pk__in=[group.id for group in user.groups.all()])
+    def _is_admin(self, user):
+        return not user.is_anonymous() and (
+            user.is_superuser or
+            user.pk == self.owner_id or
+            _qs_exists(self.admins.filter(pk=user.pk)) or
+            _qs_exists(self.admin_groups.filter(
+                pk__in=map(lambda g: g.pk, user.groups.all())))
+        )
+    has_change_permission = _is_admin
+    has_delete_permission = _is_admin
 
-    def can_push(self, user):
-        return user.is_superuser or \
-            user == self.owner or \
-            not not self.writers.filter(pk=user.id) or \
-            not not self.writer_groups.filter(pk__in=[group.id for group in user.groups.all()])
+    def has_view_permission(self, user):
+        return (
+            self._is_reader(user) or
+            self._is_writer(user) or
+            self._is_admin(user)
+        )
+    can_browse = has_view_permission
+    has_pull_permission = has_view_permission
+    can_pull = has_pull_permission
+    
+    def has_push_permission(self, user):
+        return (
+            self._is_writer(user) or
+            self._is_admin(user)
+        )
+    can_push = has_push_permission
+
+    @permalink
+    def get_admin_explore_url(self):
+        return ('admin:hgwebproxy_repository_explore', (), {
+            'id': self.id,
+        })
 
     @permalink
     def get_absolute_url(self):
@@ -124,25 +220,28 @@ class Repository(models.Model):
         current_site = Site.objects.get_current()
         return 'http://%s%s' % (current_site.domain, self.get_absolute_url())
 
-    @property
-    def lastchange(self):
-        try:
-            return get_last_changeset(self.location)['date']
-        except: # TODO: Catch specific exceptions here
-            pass
-        return _(u'n/a')
 
-    def fork(self, new_name):
-        # TODO: implement forking
-        pass
+    class Meta:
+        verbose_name = _('repository')
+        verbose_name_plural = _('repositories')
+        ordering = ['name']
 
-    def save(self, *args, **kwargs):
-        if not self.id:
-            create_repository(self.location)
-        super(Repository, self).save(*args, **kwargs)
+def _repo_pre_save(sender, instance, **kwargs):
+    # Set the location of the repository if REPO_ROOT is set.
+    # If REPO_ROOT is not set, location should be set manually
+    # so in that case let the db backend throw and error.
+    if not instance.location and hgwebproxy_settings.REPO_ROOT is not None:
+        from django.utils._os import safe_join
+        instance.location = safe_join(
+            hgwebproxy_settings.REPO_ROOT,
+            hgwebproxy_settings.REPO_PATH_CALLBACK(instance)
+        )
+pre_save.connect(_repo_pre_save, sender=Repository)
 
-    def delete(self, *args, **kwargs):
-        if not self.id:
-            delete_repository(self.location)
-        super(Repository, self).delete(*args, **kwargs)
+def _repo_post_save(sender, instance, **kwargs):
+    create_repository(instance.location)
+post_save.connect(_repo_post_save, sender=Repository)
 
+def _repo_post_delete(sender, instance, **kwargs):
+    delete_repository(instance.location)
+post_delete.connect(_repo_post_delete, sender=Repository)

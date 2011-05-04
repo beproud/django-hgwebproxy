@@ -40,11 +40,12 @@ def basic_auth(request, realm, repo):
 
     if user:
         if request.method == "POST":
-            if repo.can_push(user):
+        #   User can push to any repo?
+            if repo.has_push_permission(user):
                 return username
         else:
-            if repo.can_pull(user):
+        #   User can pull to any repo?
+            if repo.has_pull_permission(user):
                 return username
 
     return False
-

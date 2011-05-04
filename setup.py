@@ -1,4 +1,4 @@
-# -*- coding:utf8 -*-
+#:coding=utf-8:
 from distutils.command.install_data import install_data
 from distutils.command.install import INSTALL_SCHEMES
 
