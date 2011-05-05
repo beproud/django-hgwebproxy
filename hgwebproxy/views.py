@@ -144,19 +144,3 @@ def repo_detail(request, username, pattern):
         return HttpResponse(response.content, mimetype='application/xml')
     else:
         return render_to_response("hgwebproxy/wrapper.html", context, RequestContext(request))
-
-
-def static_file(request, file_name):
-    """
-    A view for debugging that handles static files.
-    """
-    static = templater.templatepath('static')
-    response = HttpResponse()
-    url = request.path
-    req = HgRequestWrapper(
-        request,
-        response,
-        script_name=url,
-    )
-    response.write(''.join([each for each in (common.staticfile(static, file_name, req))]))
-    return response

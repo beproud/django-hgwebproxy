@@ -7,8 +7,3 @@ urlpatterns = patterns('hgwebproxy.views',
     url('^(?P<username>[\w-]+)/$', 'user_repos', name='user_repos'),
     url('^(?P<username>[\w-]+)/(?P<pattern>[\w-]+)', 'repo_detail', name='repo_detail'),
 )
-
-if settings.DEBUG:
-    urlpatterns += patterns('hgwebproxy.views',
-        url('^static/(?P<file_name>.+)$', 'static_file', name='repo_static_file'),
-    )
