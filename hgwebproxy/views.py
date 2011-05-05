@@ -21,13 +21,13 @@ from django.contrib.auth.models import User
 import os
 
 def user_repos(request, username):
-    repos = Repository.objects.filter(Q(owner__username=username) & Q(is_private=False))
+    repos = Repository.objects.has_view_permission(request.user).filter(owner__username=username)
     owner = User.objects.get(username=username)
     return render_to_response("hgwebproxy/repo_user.html", {'repos': repos, 'owner': owner},
         RequestContext(request))
 
 def repo_index(request):
-    repo_all = Repository.objects.filter(Q(is_private=False) | Q(owner__username=request.user))
+    repo_all = Repository.objects.has_view_permission(request.user)
     return render_to_response("hgwebproxy/repo_all.html", {'repos': repo_all},
         RequestContext(request))
 
