@@ -221,18 +221,6 @@ class Repository(models.Model):
             ("pull_repository", "Can pull from repository"),
         )
 
-def _repo_pre_save(sender, instance, **kwargs):
-    # Set the location of the repository if REPO_ROOT is set.
-    # If REPO_ROOT is not set, location should be set manually
-    # so in that case let the db backend throw and error.
-    if not instance.location and hgwebproxy_settings.REPO_ROOT is not None:
-        from django.utils._os import safe_join
-        instance.location = safe_join(
-            hgwebproxy_settings.REPO_ROOT,
-            hgwebproxy_settings.REPO_PATH_CALLBACK(instance)
-        )
-pre_save.connect(_repo_pre_save, sender=Repository)
-
 def _repo_post_save(sender, instance, **kwargs):
     create_repository(instance.location)
 post_save.connect(_repo_post_save, sender=Repository)
