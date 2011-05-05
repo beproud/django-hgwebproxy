@@ -125,8 +125,7 @@ def validate_style(value):
 
 class Repository(models.Model):
     name = models.CharField(max_length=140)
-    slug = models.SlugField(unique=True,
-        help_text='Would be the name of the repo. Do not use "-" inside the name')
+    slug = models.SlugField(help_text='Would be the name of the repo. Do not use "-" inside the name')
     owner = models.ForeignKey(User)
     parent_repo = models.ForeignKey('self', null=True, related_name='descendents',
         editable=False)
@@ -216,6 +215,7 @@ class Repository(models.Model):
         verbose_name = _('repository')
         verbose_name_plural = _('repositories')
         ordering = ['name']
+        unique_together = ('slug', 'owner')
         permissions = (
             ("push_repository", "Can push to repository"),
             ("pull_repository", "Can pull from repository"),
