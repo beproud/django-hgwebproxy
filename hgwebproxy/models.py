@@ -53,6 +53,7 @@ class RepositoryManager(models.Manager):
         if user.is_superuser:
             return self.all()
         return self.distinct().filter(
+            Q(is_private = False) |
             Q(owner = user) | 
             Q(readers = user) |
             Q(writers = user) |
@@ -183,6 +184,7 @@ class Repository(models.Model):
 
     def has_view_permission(self, user):
         return (
+            not self.is_private or
             self._is_reader(user) or
             self._is_writer(user) or
             self._is_admin(user)
