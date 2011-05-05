@@ -30,6 +30,9 @@ class RepositoryAdminForm(forms.ModelForm):
         if re.match("[\w\d]+://", location):
             raise forms.ValidationError(_("Remote repository locations are not supported"))
 
+        if not os.path.isabs(location):
+            raise forms.ValidationError(_("Please enter an absolute path to the repository."))
+
         if not os.path.exists(os.path.join(location, '.hg')):
             perm_check_path = location
             if not os.path.exists(location):
