@@ -19,7 +19,7 @@ class RepoTestCase(DjangoTestCase):
             os.makedirs(hgwebproxy_settings.TEST_REPO_DIR)
 
         # Delete all repositories in the base directory
-        for path in os.listdir(hgwebproxy_settings.TEST_REPO_DIR)
+        for path in os.listdir(hgwebproxy_settings.TEST_REPO_DIR):
             shutil.rmtree(os.path.join(hgwebproxy_settings.TEST_REPO_DIR, path))
 
         change_perm = Permission.objects.get_by_natural_key('change_repository', 'hgwebproxy', 'repository')

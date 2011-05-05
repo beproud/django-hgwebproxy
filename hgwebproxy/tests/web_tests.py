@@ -15,93 +15,24 @@ class HgWebTest(RequestTestCaseMixin, RepoTestCase):
     fixtures = ['basic.json']
 
     def test_hgwebdir_top(self):
-        response = self.client.get(reverse("repo_list"))
+        response = self.client.get(reverse("repo_index"))
         self.assertOk(response)
         self.assertHtml(response)
 
     def test_repo_detail(self):
         self.client.login(username="owner", password="owner")
 
-        response = self.client.get(reverse('repo_detail',  kwargs={'pattern':'test-repo/'}))
+        response = self.client.get(reverse('repo_detail',  kwargs={
+            'username':'owner',
+            'pattern': 'test-repo/',
+        }))
         self.assertOk(response)
         self.assertHtml(response)
 
     def test_repo_detail_forbidden(self):
         self.client.login(username="no_perms", password="no_perms")
-        response = self.client.get(reverse('repo_detail',  kwargs={'pattern':'test-repo/'}))
+        response = self.client.get(reverse('repo_detail',  kwargs={
+            'username': 'owner',
+            'pattern':'test-repo/',
+        }))
         self.assertForbidden(response)
-
-class DebugStaticFilesTest(RequestTestCaseMixin, RepoTestCase):
-
-    def setUp(self):
-        super(DebugStaticFilesTest, self).setUp()
-        self.old_debug = settings.DEBUG
-        settings.DEBUG = True
-
-    def tearDown(self):
-        super(DebugStaticFilesTest, self).tearDown()
-        settings.DEBUG = self.old_debug
-
-    def _get_environ(self, path, data={}):
-        import urllib
-        from urlparse import urlparse, urlunparse, urlsplit
-        from django.test.client import FakePayload
-
-        parsed = urlparse(path)
-        r = {
-            'CONTENT_TYPE':    'text/html; charset=utf-8',
-            'PATH_INFO':       urllib.unquote(parsed[2]),
-            'QUERY_STRING':    urlencode(data, doseq=True) or parsed[4],
-            'REQUEST_METHOD': 'GET',
-            'wsgi.input':      FakePayload('')
-        }
-        environ = {
-            'HTTP_COOKIE':       self.client.cookies.output(header='', sep='; '),
-            'PATH_INFO':         '/',
-            'QUERY_STRING':      '',
-            'REMOTE_ADDR':       '127.0.0.1',
-            'REQUEST_METHOD':    'GET',
-            'SCRIPT_NAME':       '',
-            'SERVER_NAME':       'testserver',
-            'SERVER_PORT':       '80',
-            'SERVER_PROTOCOL':   'HTTP/1.1',
-            'wsgi.version':      (1,0),
-            'wsgi.url_scheme':   'http',
-            'wsgi.errors':       self.client.errors,
-            'wsgi.multiprocess': True,
-            'wsgi.multithread':  False,
-            'wsgi.run_once':     False,
-        }
-        environ.update(r)
-        return environ
-
-    def test_static_file(self):
-        from django.core.handlers.wsgi import WSGIRequest
-        from hgwebproxy.views import static_file
-
-        request = WSGIRequest(self._get_environ('/hg/static/hglogo.png'))
-        response = static_file(request, 'hglogo.png')
-        self.assertOk(response)
-        self.assertHeader(response, "Content-Type", "image/png")
-
-
-class HGWebDirPublicTest(RequestTestCase):
-    fixtures = ['basic.json']
-
-    def setUp(self):
-        hgwebproxy_settings.REPO_LIST_REQUIRES_LOGIN = True
-
-    def tearDown(self):
-        hgwebproxy_settings.REPO_LIST_REQUIRES_LOGIN = False
-
-    def test_public_repo_list(self):
-        response = self.client.get(reverse("repo_list", kwargs={"pattern":""}))
-        self.assertRedirect(response, "http://testserver%s" % settings.LOGIN_URL)
-
-    # TODO: Initialize test repo. Make a mock mercurial repo?
-    #def test_reader_repo_list(self):
-    #    self.client.login(username="reader", password="reader")
-    #    response = self.client.get(reverse("repo_list", kwargs={"pattern":""}))
-    #    self.assertOk(response)
-    #    self.assertHtml(response)
-    #    self.assertContains(response, "test-repo")

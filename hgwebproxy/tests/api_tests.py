@@ -14,7 +14,7 @@ from hgwebproxy.api import *
 class ApiTest(RepoTestCase):
 
     def test_create_delete_repository(self):
-        repo_dir = os.path.join(hgwebproxy_settings.TEST_REPO_ROOT, "test_create")
+        repo_dir = os.path.join(hgwebproxy_settings.TEST_REPO_DIR, "test_create")
         create_repository(repo_dir)
         self.assertTrue(os.path.isdir(repo_dir))
         self.assertTrue(os.path.isdir(os.path.join(repo_dir, ".hg")))

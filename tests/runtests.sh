@@ -1,7 +1,7 @@
 #!/bin/sh
 
-DJANGO_VERSIONS="1.1 1.2"
-HG_VERSIONS="1.3.1 1.4.3 1.5.4 1.6.3"
+DJANGO_VERSIONS="1.2"
+HG_VERSIONS="1.3.1 1.4.3 1.5.4 1.6.3 1.6.4 1.7.5 1.8.3"
 
 set -e
 python bootstrap.py
