@@ -13,7 +13,6 @@ __all__ = (
     'create_repository',
     'clone_repository',
     'delete_repository',
-    'get_last_changeset',
     'get_changeset_info',
     'is_template',
 )
@@ -63,28 +62,24 @@ def delete_repository(location):
         import shutil
         shutil.rmtree(location)
 
-def get_last_changeset(repo):
-    """
-    Returns a dictionary with information about 
-    TODO: Get the last changeset info
-    """
-    return get_changeset_info(repo, 'tip')
-
-def get_changeset_info(repo, changeset):
+def get_changeset_info(location, changeset):
     """
     TODO: Get info in a dictionary about a specific changeset
     """
-    repo = hg.repository(setup_ui(), repo)
-    ctx = repo[changeset]
-    return {
-        'changeset': display_rev(ctx),
-        'branch': ctx.branch(),
-        'tags': ctx.tags(),
-        'parents': [display_rev(p) for p in ctx.parents()],
-        'user': ctx.user(),
-        'date': datestr(ctx.date()),
-        'summary': ctx.description().splitlines()[0],
-    }
+    repo = hg.repository(setup_ui(), location)
+    if changeset in repo:
+        ctx = repo[changeset]
+        return {
+            'changeset': display_rev(ctx),
+            'branch': ctx.branch(),
+            'tags': ctx.tags(),
+            'parents': [display_rev(p) for p in ctx.parents()],
+            'user': ctx.user(),
+            'date': datestr(ctx.date()),
+            'summary': ctx.description(),
+        }
+    else:
+        return None
 
 def is_template(template):
     #TODO: Load project mercurial styles

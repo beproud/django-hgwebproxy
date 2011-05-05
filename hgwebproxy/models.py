@@ -212,6 +212,13 @@ class Repository(models.Model):
         current_site = Site.objects.get_current()
         return 'http://%s%s' % (current_site.domain, self.get_absolute_url())
 
+    @property
+    def lastchange(self):
+        tip_info = get_changeset_info(self.location, 'tip')
+        if tip_info:
+            return tip_info['date']
+        else:
+            return None
 
     class Meta:
         verbose_name = _('repository')

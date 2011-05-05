@@ -40,7 +40,7 @@
             <p>{{repo.description}}<p>
             <p>{% trans 'Clone url' %} : <a href="{{repo.get_absolute_url}}" title="{{repo.name}}">{{repo.get_clone_url}}</a>
         </td>
-        <td>{{repo.lastchange}}</td>
+        <td>{{repo.lastchange|default:"n/a"}}</td>
         <td>
             <div class="rss_logo">
             <a href="{{repo.get_absolute_url}}rss-log">RSS</a>
