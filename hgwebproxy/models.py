@@ -128,7 +128,7 @@ class Repository(models.Model):
     slug = models.SlugField(unique=True,
         help_text='Would be the name of the repo. Do not use "-" inside the name')
     owner = models.ForeignKey(User)
-    ascendent = models.ForeignKey('self', null=True, related_name='descendents',
+    parent_repo = models.ForeignKey('self', null=True, related_name='descendents',
         editable=False)
     location = models.CharField(max_length=200,
             help_text=_('The absolute path to the repository. If the repository does not exist it will be created.'))
