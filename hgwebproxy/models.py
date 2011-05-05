@@ -14,10 +14,7 @@ from hgwebproxy import settings as hgwebproxy_settings
 
 class RepositoryManager(models.Manager):
     def has_view_permission(self, user):
-        if not self._has_model_perm(user, 'view'):
-            return self.none()
-        else:
-            return self._readable(user)
+        return self._readable(user)
 
     def has_pull_permission(self, user):
         if not self._has_model_perm(user, 'pull'):
@@ -46,7 +43,7 @@ class RepositoryManager(models.Manager):
     def _has_model_perm(self, user, perm):
         opts = Repository._meta
         # Special case for custom permissions.
-        if perm in ('view', 'push', 'pull'):
+        if perm in ('push', 'pull'):
             perm_name = '%s_repository' % perm
         else:
             perm_name = getattr(opts, 'get_%s_permission' % perm, lambda: False)()
@@ -84,9 +81,6 @@ class RepositoryManager(models.Manager):
             Q(admins = user) |
             Q(admin_groups__in=user.groups.all())
         )
-
-def _qs_exists(qs):
-    return not not qs.values("pk")[:1]
 
 def validate_slug(value):
     """
@@ -162,25 +156,28 @@ class Repository(models.Model):
 
     def _is_reader(self, user):
         return not user.is_anonymous() and (
-            _qs_exists(self.readers.filter(pk=user.pk)) or
-            _qs_exists(self.reader_groups.filter(
-                pk__in=map(lambda g: g.pk, user.groups.all())))
+            self.readers.filter(pk=user.pk).exists() or
+            self.reader_groups.filter(
+                pk__in=map(lambda g: g.pk, user.groups.all())
+            ).exists()
         )
 
     def _is_writer(self, user):
         return not user.is_anonymous() and (
-            _qs_exists(self.writers.filter(pk=user.pk)) or
-            _qs_exists(self.writer_groups.filter(
-                pk__in=map(lambda g: g.pk, user.groups.all())))
+            self.writers.filter(pk=user.pk).exists() or
+            self.writer_groups.filter(
+                pk__in=map(lambda g: g.pk, user.groups.all())
+            ).exists()
         )
 
     def _is_admin(self, user):
         return not user.is_anonymous() and (
             user.is_superuser or
             user.pk == self.owner_id or
-            _qs_exists(self.admins.filter(pk=user.pk)) or
-            _qs_exists(self.admin_groups.filter(
-                pk__in=map(lambda g: g.pk, user.groups.all())))
+            self.admins.filter(pk=user.pk).exists() or
+            self.admin_groups.filter(
+                pk__in=map(lambda g: g.pk, user.groups.all())
+            ).exists()
         )
     has_change_permission = _is_admin
     has_delete_permission = _is_admin
@@ -220,7 +217,6 @@ class Repository(models.Model):
         verbose_name_plural = _('repositories')
         ordering = ['name']
         permissions = (
-            ("view_repository", "Can view repository"),
             ("push_repository", "Can push to repository"),
             ("pull_repository", "Can pull from repository"),
         )

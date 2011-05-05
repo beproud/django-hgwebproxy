@@ -15,21 +15,19 @@ class RepoTestCase(DjangoTestCase):
     fixtures = ['basic.json']
 
     def setUp(self):
-        if not os.path.exists(hgwebproxy_settings.TEST_REPO_ROOT):
-            os.makedirs(hgwebproxy_settings.TEST_REPO_ROOT)
+        if not os.path.exists(hgwebproxy_settings.TEST_REPO_DIR):
+            os.makedirs(hgwebproxy_settings.TEST_REPO_DIR)
 
         # Delete all repositories in the base directory
-        for path in os.listdir(hgwebproxy_settings.TEST_REPO_ROOT):
-            shutil.rmtree(os.path.join(hgwebproxy_settings.TEST_REPO_ROOT, path))
+        for path in os.listdir(hgwebproxy_settings.TEST_REPO_DIR)
+            shutil.rmtree(os.path.join(hgwebproxy_settings.TEST_REPO_DIR, path))
 
-        view_perm = Permission.objects.get_by_natural_key('view_repository', 'hgwebproxy', 'repository')
         change_perm = Permission.objects.get_by_natural_key('change_repository', 'hgwebproxy', 'repository')
         delete_perm = Permission.objects.get_by_natural_key('delete_repository', 'hgwebproxy', 'repository')
         pull_perm = Permission.objects.get_by_natural_key('pull_repository', 'hgwebproxy', 'repository')
         push_perm = Permission.objects.get_by_natural_key('push_repository', 'hgwebproxy', 'repository')
         for username in ['owner', 'reader', 'writer', 'group_reader', 'group_writer', 'model_perms']:
             user = User.objects.get(username=username)
-            user.user_permissions.add(view_perm)
             user.user_permissions.add(change_perm)
             user.user_permissions.add(delete_perm)
             user.user_permissions.add(pull_perm)
@@ -40,7 +38,7 @@ class RepoTestCase(DjangoTestCase):
             name="Test Repo",
             slug="test-repo",
             owner=User.objects.get(username="owner"),
-            location=os.path.join(hgwebproxy_settings.TEST_REPO_ROOT, "test_repo"),
+            location=os.path.join(hgwebproxy_settings.TEST_REPO_DIR, "test_repo"),
         )
         repo.save()
         repo.readers.add(User.objects.get(username="reader"))
