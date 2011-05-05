@@ -38,14 +38,17 @@ def basic_auth(request, realm, repo):
         username, password = basic_hash.decode('base64').split(':', 1)
         user = authenticate(username=username, password=password)
 
-    if user:
         if request.method == "POST":
-        #   User can push to any repo?
-            if repo.has_push_permission(user):
+            #   User can push to any repo?
+            if user and repo.has_push_permission(user):
                 return username
         else:
-        #   User can pull to any repo?
-            if repo.has_pull_permission(user):
+            #   User can pull to any repo?
+            if repo.is_public:
+                # If the repo is public return a "*" to
+                # indicate any user
+                return "*"
+            elif user and repo.has_pull_permission(user):
                 return username
 
     return False
